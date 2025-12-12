@@ -1,20 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Face Rating AI</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
+  <meta charset="UTF-8">
+  <title>Ultimate Face Rating AI - Offline</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Face Rating AI</h1>
-        <input type="file" id="imageInput" accept="image/*">
-        <button id="analyzeBtn">Analyze</button>
-        <div id="result"></div>
-        <canvas id="canvas" style="display:none;"></canvas>
+  <div class="container">
+    <h1>Ultimate Face Rating AI - Offline</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <button id="analyzeBtn">Analyze</button>
+
+    <div id="result">
+      <div id="score">Score: 0 / 10</div>
+      <div id="category">Category: -</div>
+      <div id="progressBarContainer"><div id="progressBar"></div></div>
     </div>
-    <script src="script.js"></script>
+
+    <canvas id="canvas"></canvas>
+
+    <h2>Uploaded Photos (Local)</h2>
+    <label>Filter by category: 
+      <select id="filterCategory">
+        <option value="all">All</option>
+        <option value="sub 3">sub 3</option>
+        <option value="sub 5">sub 5</option>
+        <option value="ltn">ltn</option>
+        <option value="mtn">mtn</option>
+        <option value="htn">htn</option>
+        <option value="chadlite">chadlite</option>
+        <option value="chad">chad</option>
+      </select>
+    </label>
+    <div id="photoGallery"></div>
+  </div>
+  <script src="script.js"></script>
 </body>
-</html>
+          </html>
