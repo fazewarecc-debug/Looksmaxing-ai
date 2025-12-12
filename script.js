@@ -1,47 +1,38 @@
-async function analyze() {
-    const file = document.getElementById("imageInput").files[0];
-    if (!file) {
-        alert("Загрузи фото лица!");
-        return;
-    }
+const imageInput = document.getElementById('imageInput');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const resultDiv = document.getElementById('result');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
 
-    const resultDiv = document.getElementById("result");
-    resultDiv.innerHTML = "Анализируем...";
+analyzeBtn.addEventListener('click', () => {
+    const file = imageInput.files[0];
+    if (!file) return alert("Выберите изображение!");
+    
+    const img = new Image();
+    img.onload = () => analyzeFace(img);
+    img.src = URL.createObjectURL(file);
+});
 
-    const formData = new FormData();
-    formData.append("image", file);
+function analyzeFace(img) {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
 
-    // Бесплатная модель для оценки красоты (HuggingFace)
-    const response = await fetch(
-        "https://api-inference.huggingface.co/models/thiagobodruk/beauty-mnist",
-        {
-            method: "POST",
-            body: formData
-        }
-    );
+    // Простейшая "оценка симметрии": будем использовать центр изображения и размеры лица
+    const symmetryScore = Math.random() * 10; // Заглушка для примера, заменяется реальной AI логикой
 
-    const data = await response.json();
-    console.log(data);
-
-    // Модель выдаёт число 0–10
-    let score = data?.score ?? Math.random() * 10;
-
-    score = Math.round(score * 10) / 10;
-
-    const tier = getTier(score);
+    // Категории
+    let category;
+    if (symmetryScore < 3) category = "sub 3";
+    else if (symmetryScore < 5) category = "sub 5";
+    else if (symmetryScore < 6) category = "ltn";
+    else if (symmetryScore < 7) category = "mtn";
+    else if (symmetryScore < 8) category = "htn";
+    else if (symmetryScore < 9) category = "chadlite";
+    else category = "chad";
 
     resultDiv.innerHTML = `
-        <h2>Оценка: ${score}/10</h2>
-        <h3>Категория: ${tier}</h3>
+        Score: ${symmetryScore.toFixed(2)} / 10 <br>
+        Category: ${category}
     `;
-}
-
-function getTier(score) {
-    if (score < 3) return "sub3";
-    if (score < 5) return "sub5";
-    if (score < 6) return "LTN";
-    if (score < 7) return "MTN";
-    if (score < 8) return "HTN";
-    if (score < 9) return "chadlite";
-    return "chad";
 }
