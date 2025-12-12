@@ -36,7 +36,7 @@ h1, h2 { color: #333; }
 #progressBar { height: 100%; width: 0%; border-radius: 10px; background: linear-gradient(90deg, #ff4d4d, #4CAF50); transition: width 1s; }
 
 #photoGallery { display: flex; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
-.photoItem { margin: 10px; border: 2px solid #ccc; border-radius: 10px; overflow: hidden; }
+.photoItem { margin: 10px; border: 2px solid #ccc; border-radius: 10px; overflow: hidden; position: relative; }
 .photoItem img { width: 150px; height: auto; display: block; }
 
 #filterCategory { margin: 10px; padding: 5px; font-size: 1em; border-radius: 5px; }
