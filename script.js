@@ -9,23 +9,29 @@ const photoGallery = document.getElementById('photoGallery');
 const filterCategory = document.getElementById('filterCategory');
 
 let model;
-let localPhotos = []; // локальная галерея
+let localPhotos = [];
 
 async function loadModel() {
   model = await faceLandmarksDetection.load(faceLandmarksDetection.SupportedPackages.mediapipeFacemesh);
+  console.log("Модель загружена");
 }
 loadModel();
 
 analyzeBtn.addEventListener('click', async () => {
   const file = imageInput.files[0];
   if(!file) return alert("Выберите изображение!");
+  if(!model) return alert("Модель еще загружается. Подождите...");
 
   const img = new Image();
   img.onload = async () => {
-    const category = await analyzeFace(img);
-    // Сохраняем локально
-    localPhotos.unshift({url: img.src, category});
-    renderGallery();
+    try {
+      const category = await analyzeFace(img);
+      localPhotos.unshift({url: img.src, category});
+      renderGallery();
+    } catch (err) {
+      alert("Не удалось распознать лицо. Попробуйте другое фото.");
+      console.error(err);
+    }
   };
   img.src = URL.createObjectURL(file);
 });
@@ -37,6 +43,7 @@ function renderGallery() {
   photoGallery.innerHTML = '';
   let photos = localPhotos;
   if(cat !== 'all') photos = photos.filter(p => p.category === cat);
+
   photos.forEach(p => {
     const div = document.createElement('div');
     div.className = 'photoItem';
@@ -44,17 +51,38 @@ function renderGallery() {
     img.src = p.url;
     div.appendChild(img);
     photoGallery.appendChild(div);
+    addHoverAnimation(img);
   });
 }
 
+// Анимация при наведении
+function addHoverAnimation(imgElement){
+  imgElement.addEventListener('mouseenter', async () => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = imgElement.src;
+    img.onload = async () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0);
+      await analyzeFace(img); // отображаем точки и линии на основном canvas
+    };
+  });
+  imgElement.addEventListener('mouseleave', () => {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  });
+}
+
+// Анализ лица
 async function analyzeFace(img) {
+  const predictions = await model.estimateFaces({input:img,returnTensors:false,flipHorizontal:false});
+  if(predictions.length===0) throw new Error("Лицо не найдено");
+
   canvas.width = img.width;
   canvas.height = img.height;
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.drawImage(img,0,0);
-
-  const predictions = await model.estimateFaces({input:img,returnTensors:false,flipHorizontal:false});
-  if(predictions.length===0) return alert("Лицо не найдено");
 
   const keypoints = predictions[0].scaledMesh;
   const points = {
@@ -86,7 +114,7 @@ async function analyzeFace(img) {
   else if(symmetryScore<9) category="chadlite";
   else category="chad";
 
-  // Обновление интерфейса
+  // Обновляем UI
   scoreDiv.textContent = `Score: ${symmetryScore.toFixed(2)} / 10`;
   categoryDiv.textContent = `Category: ${category}`;
   progressBar.style.width = `${symmetryScore*10}%`;
@@ -98,7 +126,7 @@ async function analyzeFace(img) {
   else if(symmetryScore<9) progressBar.style.background='#4dffb8';
   else progressBar.style.background='#4dffff';
 
-  // Рисуем точки и линии
+  // Рисуем точки
   for(const key in points){
     const [x,y]=points[key];
     ctx.fillStyle='yellow';
@@ -107,56 +135,25 @@ async function analyzeFace(img) {
     ctx.fill();
   }
 
-  ctx.strokeStyle='cyan';
+  // Линии с анимацией цвета
   ctx.lineWidth=1.5;
-  drawLine(points.leftEye, points.nose);
-  drawLine(points.rightEye, points.nose);
-  drawLine(points.leftMouth, points.rightMouth);
-  drawLine(points.leftBrow, points.rightBrow);
-  drawLine(points.nose, points.chin);
+  drawAnimatedLine(points.leftEye, points.nose);
+  drawAnimatedLine(points.rightEye, points.nose);
+  drawAnimatedLine(points.leftMouth, points.rightMouth);
+  drawAnimatedLine(points.leftBrow, points.rightBrow);
+  drawAnimatedLine(points.nose, points.chin);
 
   return category;
 }
 
-function drawLine(p1,p2){
+// Линии с градиентом
+function drawAnimatedLine(p1,p2){
+  const grad = ctx.createLinearGradient(p1[0],p1[1],p2[0],p2[1]);
+  grad.addColorStop(0,'cyan');
+  grad.addColorStop(1,'magenta');
+  ctx.strokeStyle=grad;
   ctx.beginPath();
   ctx.moveTo(p1[0],p1[1]);
   ctx.lineTo(p2[0],p2[1]);
   ctx.stroke();
-                 }    });
-
-    if (predictions.length === 0) {
-        resultDiv.innerHTML = "Лицо не найдено. Попробуйте другое фото.";
-        return;
-    }
-
-    // Берем первое лицо
-    const keypoints = predictions[0].scaledMesh;
-
-    // Простая симметрия: сравниваем горизонтальные координаты глаз
-    const leftEye = keypoints[33];  // левый глаз
-    const rightEye = keypoints[263]; // правый глаз
-    const nose = keypoints[1];       // нос
-
-    const eyeDistance = Math.abs(leftEye[0] - rightEye[0]);
-    const leftEyeOffset = Math.abs(leftEye[0] - nose[0]);
-    const rightEyeOffset = Math.abs(rightEye[0] - nose[0]);
-
-    let symmetry = 10 - Math.abs(leftEyeOffset - rightEyeOffset)/eyeDistance * 10;
-    symmetry = Math.max(0, Math.min(symmetry, 10)); // ограничим 0–10
-
-    // Категории
-    let category;
-    if (symmetry < 3) category = "sub 3";
-    else if (symmetry < 5) category = "sub 5";
-    else if (symmetry < 6) category = "ltn";
-    else if (symmetry < 7) category = "mtn";
-    else if (symmetry < 8) category = "htn";
-    else if (symmetry < 9) category = "chadlite";
-    else category = "chad";
-
-    resultDiv.innerHTML = `
-        Score: ${symmetry.toFixed(2)} / 10 <br>
-        Category: ${category}
-    `;
-}
+      }
